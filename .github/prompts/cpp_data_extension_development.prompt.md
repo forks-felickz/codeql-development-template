@@ -22,31 +22,32 @@ The pack name is `codeql/cpp-all`.
 
 #### Extensible predicates
 
-| Predicate | Columns | Purpose |
-|---|---|---|
-| `sourceModel` | `(namespace, type, subtypes, name, signature, ext, output, kind, provenance)` | Model sources of tainted data |
-| `sinkModel` | `(namespace, type, subtypes, name, signature, ext, input, kind, provenance)` | Model sinks |
-| `summaryModel` | `(namespace, type, subtypes, name, signature, ext, input, output, kind, provenance)` | Model flow through functions |
-| `barrierModel` | `(namespace, type, subtypes, name, signature, ext, output, kind, provenance)` | Model barriers (sanitizers) that stop taint flow |
+| Predicate           | Columns                                                                                      | Purpose                                                                  |
+| ------------------- | -------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------ |
+| `sourceModel`       | `(namespace, type, subtypes, name, signature, ext, output, kind, provenance)`                | Model sources of tainted data                                            |
+| `sinkModel`         | `(namespace, type, subtypes, name, signature, ext, input, kind, provenance)`                 | Model sinks                                                              |
+| `summaryModel`      | `(namespace, type, subtypes, name, signature, ext, input, output, kind, provenance)`         | Model flow through functions                                             |
+| `barrierModel`      | `(namespace, type, subtypes, name, signature, ext, output, kind, provenance)`                | Model barriers (sanitizers) that stop taint flow                         |
 | `barrierGuardModel` | `(namespace, type, subtypes, name, signature, ext, input, acceptingValue, kind, provenance)` | Model barrier guards (validators) that stop taint via conditional checks |
 
 **Note:** C/C++ does **not** currently support `neutralModel`.
 
 #### Tuple column reference
 
-| Column | Description | Example |
-|---|---|---|
-| `namespace` | C++ namespace (use `""` for global namespace) | `"boost::asio"`, `""` |
-| `type` | Class name (use `""` for free functions) | `""`, `"Socket"` |
-| `subtypes` | Whether model applies to overrides (`True`/`False`). Use `False` for free functions. | `False` |
-| `name` | Function or method name | `"read_until"`, `"write"` |
-| `signature` | Can narrow between overloaded functions. Use `""` to match all overloads. | `""` |
-| `ext` | Leave empty (`""`) | `""` |
-| `input`/`output` | Access path (supports pointer indirection via `*`) | `"Argument[*1]"`, `"ReturnValue"` |
-| `kind` | Source/sink/summary kind | `"remote"`, `"remote-sink"` |
-| `provenance` | Origin of the model | `"manual"` |
+| Column           | Description                                                                          | Example                           |
+| ---------------- | ------------------------------------------------------------------------------------ | --------------------------------- |
+| `namespace`      | C++ namespace (use `""` for global namespace)                                        | `"boost::asio"`, `""`             |
+| `type`           | Class name (use `""` for free functions)                                             | `""`, `"Socket"`                  |
+| `subtypes`       | Whether model applies to overrides (`True`/`False`). Use `False` for free functions. | `False`                           |
+| `name`           | Function or method name                                                              | `"read_until"`, `"write"`         |
+| `signature`      | Can narrow between overloaded functions. Use `""` to match all overloads.            | `""`                              |
+| `ext`            | Leave empty (`""`)                                                                   | `""`                              |
+| `input`/`output` | Access path (supports pointer indirection via `*`)                                   | `"Argument[*1]"`, `"ReturnValue"` |
+| `kind`           | Source/sink/summary kind                                                             | `"remote"`, `"remote-sink"`       |
+| `provenance`     | Origin of the model                                                                  | `"manual"`                        |
 
 #### Important: C/C++-specific rules
+
 - **Pointer indirection**: Use the `*` prefix on argument indices to dereference pointers. `Argument[*1]` means "the pointed-to value of the second argument."
 - **Free functions** have `type` = `""` and `subtypes` = `False`
 - **Namespace nesting**: Use `::` separator (e.g., `"boost::asio"`)
@@ -55,12 +56,12 @@ The pack name is `codeql/cpp-all`.
 
 ### Access Paths
 
-| Component | Description |
-|---|---|
-| `Argument[n]` | Argument at index n (0-based, the value itself) |
-| `Argument[*n]` | First indirection (pointed-to value) of argument n |
-| `ReturnValue` | Return value of the function |
-| `ReturnValue[*]` | Pointed-to value of the return value |
+| Component        | Description                                        |
+| ---------------- | -------------------------------------------------- |
+| `Argument[n]`    | Argument at index n (0-based, the value itself)    |
+| `Argument[*n]`   | First indirection (pointed-to value) of argument n |
+| `ReturnValue`    | Return value of the function                       |
+| `ReturnValue[*]` | Pointed-to value of the return value               |
 
 ### Sink Kinds
 
@@ -87,7 +88,7 @@ extensions:
       pack: codeql/cpp-all
       extensible: sinkModel
     data:
-      - ["boost::asio", "", False, "write", "", "", "Argument[*1]", "remote-sink", "manual"]
+      - ['boost::asio', '', False, 'write', '', '', 'Argument[*1]', 'remote-sink', 'manual']
 
   - addsTo:
       pack: codeql/cpp-all
@@ -113,7 +114,7 @@ extensions:
       pack: codeql/cpp-all
       extensible: sourceModel
     data:
-      - ["boost::asio", "", False, "read_until", "", "", "Argument[*1]", "remote", "manual"]
+      - ['boost::asio', '', False, 'read_until', '', '', 'Argument[*1]', 'remote', 'manual']
 ```
 
 Note: `Argument[*1]` means the **pointed-to value** of the second argument (the buffer being filled with network data).
@@ -126,7 +127,18 @@ extensions:
       pack: codeql/cpp-all
       extensible: summaryModel
     data:
-      - ["boost::asio", "", False, "buffer", "", "", "Argument[*0]", "ReturnValue", "taint", "manual"]
+      - [
+          'boost::asio',
+          '',
+          False,
+          'buffer',
+          '',
+          '',
+          'Argument[*0]',
+          'ReturnValue',
+          'taint',
+          'manual'
+        ]
 ```
 
 ### Example: Taint Barrier Using `mysql_real_escape_string`
@@ -144,7 +156,17 @@ extensions:
       pack: codeql/cpp-all
       extensible: barrierModel
     data:
-      - ["", "", False, "mysql_real_escape_string", "", "", "Argument[*1]", "sql-injection", "manual"]
+      - [
+          '',
+          '',
+          False,
+          'mysql_real_escape_string',
+          '',
+          '',
+          'Argument[*1]',
+          'sql-injection',
+          'manual'
+        ]
 ```
 
 Note: `Argument[*1]` means the **pointed-to value** of the second argument — the output buffer that receives the escaped string. The `kind` `"sql-injection"` must match the sink kind used by SQL injection queries.
@@ -165,20 +187,21 @@ extensions:
       pack: codeql/cpp-all
       extensible: barrierGuardModel
     data:
-      - ["", "", False, "is_safe", "", "", "Argument[*0]", "true", "sql-injection", "manual"]
+      - ['', '', False, 'is_safe', '', '', 'Argument[*0]', 'true', 'sql-injection', 'manual']
 ```
 
 Note: The `acceptingValue` `"true"` means the barrier applies when `is_safe` returns true. The `input` `"Argument[*0]"` identifies the value being validated (the pointed-to value of the first argument).
 
 ### Key Differences from Other Languages
 
-| Aspect | C/C++ | Java/C#/Go |
-|---|---|---|
-| Pack name | `codeql/cpp-all` | `codeql/java-all`, etc. |
-| Identifier column 1 | `namespace` (C++ namespace) | `package`/`namespace` |
-| Pointer indirection | `Argument[*n]` for dereferenced pointers | Not applicable |
-| `neutralModel` | Not supported | Supported |
-| Receiver access | Not applicable (C++ uses `Argument[this]` if modeled) | `Argument[this]` / `Argument[receiver]` |
+| Aspect              | C/C++                                                 | Java/C#/Go                              |
+| ------------------- | ----------------------------------------------------- | --------------------------------------- |
+| Pack name           | `codeql/cpp-all`                                      | `codeql/java-all`, etc.                 |
+| Identifier column 1 | `namespace` (C++ namespace)                           | `package`/`namespace`                   |
+| Pointer indirection | `Argument[*n]` for dereferenced pointers              | Not applicable                          |
+| `neutralModel`      | Not supported                                         | Supported                               |
+| Receiver access     | Not applicable (C++ uses `Argument[this]` if modeled) | `Argument[this]` / `Argument[receiver]` |
 
 ### Additional References
+
 - **[C/C++ Reference](./cpp_query_development.prompt.md)** - C/C++ query development

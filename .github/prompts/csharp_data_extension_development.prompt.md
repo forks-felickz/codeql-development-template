@@ -22,30 +22,31 @@ The pack name is `codeql/csharp-all`.
 
 #### Extensible predicates
 
-| Predicate | Columns | Purpose |
-|---|---|---|
-| `sourceModel` | `(namespace, type, subtypes, name, signature, ext, output, kind, provenance)` | Model sources of tainted data |
-| `sinkModel` | `(namespace, type, subtypes, name, signature, ext, input, kind, provenance)` | Model sinks |
-| `summaryModel` | `(namespace, type, subtypes, name, signature, ext, input, output, kind, provenance)` | Model flow through methods |
-| `barrierModel` | `(namespace, type, subtypes, name, signature, ext, output, kind, provenance)` | Model barriers (sanitizers) that stop taint flow |
+| Predicate           | Columns                                                                                      | Purpose                                                                  |
+| ------------------- | -------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------ |
+| `sourceModel`       | `(namespace, type, subtypes, name, signature, ext, output, kind, provenance)`                | Model sources of tainted data                                            |
+| `sinkModel`         | `(namespace, type, subtypes, name, signature, ext, input, kind, provenance)`                 | Model sinks                                                              |
+| `summaryModel`      | `(namespace, type, subtypes, name, signature, ext, input, output, kind, provenance)`         | Model flow through methods                                               |
+| `barrierModel`      | `(namespace, type, subtypes, name, signature, ext, output, kind, provenance)`                | Model barriers (sanitizers) that stop taint flow                         |
 | `barrierGuardModel` | `(namespace, type, subtypes, name, signature, ext, input, acceptingValue, kind, provenance)` | Model barrier guards (validators) that stop taint via conditional checks |
-| `neutralModel` | `(namespace, type, name, signature, kind, provenance)` | Mark methods as having no dataflow impact |
+| `neutralModel`      | `(namespace, type, name, signature, kind, provenance)`                                       | Mark methods as having no dataflow impact                                |
 
 #### Tuple column reference
 
-| Column | Description | Example |
-|---|---|---|
-| `namespace` | Fully qualified namespace | `"System.Data.SqlClient"` |
-| `type` | Class or interface name | `"SqlCommand"` |
-| `subtypes` | Whether model applies to overrides (`True`/`False`) | `False` |
-| `name` | Method/property name. Constructors use the class name. Getters: `get_Name`, Setters: `set_Name` | `"SqlCommand"`, `"get_Now"` |
-| `signature` | Fully qualified parameter types in parentheses | `"(System.String,System.Data.SqlClient.SqlConnection)"` |
-| `ext` | Leave empty (`""`) | `""` |
-| `input`/`output` | Access path | `"Argument[0]"`, `"ReturnValue"` |
-| `kind` | Source/sink/summary kind | `"sql-injection"`, `"taint"` |
-| `provenance` | Origin of the model | `"manual"` |
+| Column           | Description                                                                                     | Example                                                 |
+| ---------------- | ----------------------------------------------------------------------------------------------- | ------------------------------------------------------- |
+| `namespace`      | Fully qualified namespace                                                                       | `"System.Data.SqlClient"`                               |
+| `type`           | Class or interface name                                                                         | `"SqlCommand"`                                          |
+| `subtypes`       | Whether model applies to overrides (`True`/`False`)                                             | `False`                                                 |
+| `name`           | Method/property name. Constructors use the class name. Getters: `get_Name`, Setters: `set_Name` | `"SqlCommand"`, `"get_Now"`                             |
+| `signature`      | Fully qualified parameter types in parentheses                                                  | `"(System.String,System.Data.SqlClient.SqlConnection)"` |
+| `ext`            | Leave empty (`""`)                                                                              | `""`                                                    |
+| `input`/`output` | Access path                                                                                     | `"Argument[0]"`, `"ReturnValue"`                        |
+| `kind`           | Source/sink/summary kind                                                                        | `"sql-injection"`, `"taint"`                            |
+| `provenance`     | Origin of the model                                                                             | `"manual"`                                              |
 
 #### Important: C#-specific signature rules
+
 - Type names must be **fully qualified**: `System.String`, not `string`
 - Generic type parameters must match source code names: `Select<TSource,TResult>`
 - Generics in signatures must match: `(System.Collections.Generic.IEnumerable<TSource>,System.Func<TSource,TResult>)`
@@ -54,16 +55,16 @@ The pack name is `codeql/csharp-all`.
 
 ### Access Paths
 
-| Component | Description |
-|---|---|
-| `Argument[n]` | Argument at index n (0-based) |
-| `Argument[this]` | The qualifier/receiver of a method call |
-| `Argument[n1,n2]` | Shorthand for multiple arguments |
-| `ReturnValue` | Return value of the method |
-| `Element` | Elements of a collection (e.g., IEnumerable) |
-| `Parameter[n]` | Parameter at index n of a delegate/lambda |
-| `Field[name]` | Named field |
-| `Property[name]` | Named property |
+| Component         | Description                                  |
+| ----------------- | -------------------------------------------- |
+| `Argument[n]`     | Argument at index n (0-based)                |
+| `Argument[this]`  | The qualifier/receiver of a method call      |
+| `Argument[n1,n2]` | Shorthand for multiple arguments             |
+| `ReturnValue`     | Return value of the method                   |
+| `Element`         | Elements of a collection (e.g., IEnumerable) |
+| `Parameter[n]`    | Parameter at index n of a delegate/lambda    |
+| `Field[name]`     | Named field                                  |
+| `Property[name]`  | Named property                               |
 
 ### Sink Kinds
 
@@ -72,6 +73,7 @@ The pack name is `codeql/csharp-all`.
 ### Threat Models (C#-specific)
 
 In addition to `remote` and `local`, C# supports:
+
 - `file-write` — opening a file in write mode
 - `windows-registry` — Windows registry values (C# only)
 
@@ -98,7 +100,17 @@ extensions:
       pack: codeql/csharp-all
       extensible: sinkModel
     data:
-      - ["System.Data.SqlClient", "SqlCommand", False, "SqlCommand", "(System.String,System.Data.SqlClient.SqlConnection)", "", "Argument[0]", "sql-injection", "manual"]
+      - [
+          'System.Data.SqlClient',
+          'SqlCommand',
+          False,
+          'SqlCommand',
+          '(System.String,System.Data.SqlClient.SqlConnection)',
+          '',
+          'Argument[0]',
+          'sql-injection',
+          'manual'
+        ]
 
   - addsTo:
       pack: codeql/csharp-all
@@ -129,7 +141,17 @@ extensions:
       pack: codeql/csharp-all
       extensible: sourceModel
     data:
-      - ["System.Net.Sockets", "TcpClient", False, "GetStream", "()", "", "ReturnValue", "remote", "manual"]
+      - [
+          'System.Net.Sockets',
+          'TcpClient',
+          False,
+          'GetStream',
+          '()',
+          '',
+          'ReturnValue',
+          'remote',
+          'manual'
+        ]
 ```
 
 ### Example: Flow Through `String.Concat`
@@ -140,7 +162,18 @@ extensions:
       pack: codeql/csharp-all
       extensible: summaryModel
     data:
-      - ["System", "String", False, "Concat", "(System.Object,System.Object)", "", "Argument[0,1]", "ReturnValue", "taint", "manual"]
+      - [
+          'System',
+          'String',
+          False,
+          'Concat',
+          '(System.Object,System.Object)',
+          '',
+          'Argument[0,1]',
+          'ReturnValue',
+          'taint',
+          'manual'
+        ]
 ```
 
 Note: `Argument[0,1]` is shorthand for both `Argument[0]` and `Argument[1]`.
@@ -153,7 +186,18 @@ extensions:
       pack: codeql/csharp-all
       extensible: summaryModel
     data:
-      - ["System", "String", False, "Trim", "()", "", "Argument[this]", "ReturnValue", "taint", "manual"]
+      - [
+          'System',
+          'String',
+          False,
+          'Trim',
+          '()',
+          '',
+          'Argument[this]',
+          'ReturnValue',
+          'taint',
+          'manual'
+        ]
 ```
 
 ### Example: Flow Through LINQ `Select` (Higher-Order + Generics)
@@ -164,8 +208,30 @@ extensions:
       pack: codeql/csharp-all
       extensible: summaryModel
     data:
-      - ["System.Linq", "Enumerable", False, "Select<TSource,TResult>", "(System.Collections.Generic.IEnumerable<TSource>,System.Func<TSource,TResult>)", "", "Argument[0].Element", "Argument[1].Parameter[0]", "value", "manual"]
-      - ["System.Linq", "Enumerable", False, "Select<TSource,TResult>", "(System.Collections.Generic.IEnumerable<TSource>,System.Func<TSource,TResult>)", "", "Argument[1].ReturnValue", "ReturnValue.Element", "value", "manual"]
+      - [
+          'System.Linq',
+          'Enumerable',
+          False,
+          'Select<TSource,TResult>',
+          '(System.Collections.Generic.IEnumerable<TSource>,System.Func<TSource,TResult>)',
+          '',
+          'Argument[0].Element',
+          'Argument[1].Parameter[0]',
+          'value',
+          'manual'
+        ]
+      - [
+          'System.Linq',
+          'Enumerable',
+          False,
+          'Select<TSource,TResult>',
+          '(System.Collections.Generic.IEnumerable<TSource>,System.Func<TSource,TResult>)',
+          '',
+          'Argument[1].ReturnValue',
+          'ReturnValue.Element',
+          'value',
+          'manual'
+        ]
 ```
 
 Note: Two rows model the two-step flow: collection elements into the lambda parameter, then from the lambda return value into the output collection elements. Generic type parameter names must match the source code.
@@ -178,7 +244,7 @@ extensions:
       pack: codeql/csharp-all
       extensible: neutralModel
     data:
-      - ["System", "DateTime", "get_Now", "()", "summary", "manual"]
+      - ['System', 'DateTime', 'get_Now', '()', 'summary', 'manual']
 ```
 
 ### Example: Barrier for URL Redirection
@@ -198,7 +264,17 @@ extensions:
       pack: codeql/csharp-all
       extensible: barrierModel
     data:
-      - ["System.Web", "HttpRequest", False, "get_RawUrl", "()", "", "ReturnValue", "url-redirection", "manual"]
+      - [
+          'System.Web',
+          'HttpRequest',
+          False,
+          'get_RawUrl',
+          '()',
+          '',
+          'ReturnValue',
+          'url-redirection',
+          'manual'
+        ]
 ```
 
 Note: Property getters are modeled as `get_PropertyName`. The `kind` `"url-redirection"` must match the sink kind used by URL redirection queries.
@@ -221,10 +297,22 @@ extensions:
       pack: codeql/csharp-all
       extensible: barrierGuardModel
     data:
-      - ["System", "Uri", False, "get_IsAbsoluteUri", "()", "", "Argument[this]", "false", "url-redirection", "manual"]
+      - [
+          'System',
+          'Uri',
+          False,
+          'get_IsAbsoluteUri',
+          '()',
+          '',
+          'Argument[this]',
+          'false',
+          'url-redirection',
+          'manual'
+        ]
 ```
 
 Note: The `acceptingValue` `"false"` means the barrier applies when `IsAbsoluteUri` is false (the URL is relative). The `input` `"Argument[this]"` identifies the qualifier (`uri`) whose taint flow is blocked.
 
 ### Additional References
+
 - **[C# Reference](./csharp_query_development.prompt.md)** - C# query development

@@ -22,30 +22,31 @@ The pack name is `codeql/go-all`.
 
 #### Extensible predicates
 
-| Predicate | Columns | Purpose |
-|---|---|---|
-| `sourceModel` | `(package, type, subtypes, name, signature, ext, output, kind, provenance)` | Model sources of tainted data |
-| `sinkModel` | `(package, type, subtypes, name, signature, ext, input, kind, provenance)` | Model sinks |
-| `summaryModel` | `(package, type, subtypes, name, signature, ext, input, output, kind, provenance)` | Model flow through functions |
-| `barrierModel` | `(package, type, subtypes, name, signature, ext, output, kind, provenance)` | Model barriers (sanitizers) that stop taint flow |
+| Predicate           | Columns                                                                                    | Purpose                                                                  |
+| ------------------- | ------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------ |
+| `sourceModel`       | `(package, type, subtypes, name, signature, ext, output, kind, provenance)`                | Model sources of tainted data                                            |
+| `sinkModel`         | `(package, type, subtypes, name, signature, ext, input, kind, provenance)`                 | Model sinks                                                              |
+| `summaryModel`      | `(package, type, subtypes, name, signature, ext, input, output, kind, provenance)`         | Model flow through functions                                             |
+| `barrierModel`      | `(package, type, subtypes, name, signature, ext, output, kind, provenance)`                | Model barriers (sanitizers) that stop taint flow                         |
 | `barrierGuardModel` | `(package, type, subtypes, name, signature, ext, input, acceptingValue, kind, provenance)` | Model barrier guards (validators) that stop taint via conditional checks |
-| `neutralModel` | `(package, type, name, signature, kind, provenance)` | Mark functions as having no dataflow impact |
+| `neutralModel`      | `(package, type, name, signature, kind, provenance)`                                       | Mark functions as having no dataflow impact                              |
 
 #### Tuple column reference
 
-| Column | Description | Example |
-|---|---|---|
-| `package` | Go package import path | `"database/sql"`, `"net/http"` |
-| `type` | Receiver type name (leave `""` for free functions) | `"DB"`, `""` |
-| `subtypes` | Whether model applies to embedded types / interface implementors (`True`/`False`) | `True` |
-| `name` | Function or method name, or field name | `"Prepare"`, `"Body"` |
-| `signature` | **Always `""` for Go** (Go does not use signature-based overload resolution) | `""` |
-| `ext` | Leave empty (`""`) | `""` |
-| `input`/`output` | Access path | `"Argument[0]"`, `"ReturnValue"` |
-| `kind` | Source/sink/summary kind | `"sql-injection"`, `"taint"` |
-| `provenance` | Origin of the model | `"manual"` |
+| Column           | Description                                                                       | Example                          |
+| ---------------- | --------------------------------------------------------------------------------- | -------------------------------- |
+| `package`        | Go package import path                                                            | `"database/sql"`, `"net/http"`   |
+| `type`           | Receiver type name (leave `""` for free functions)                                | `"DB"`, `""`                     |
+| `subtypes`       | Whether model applies to embedded types / interface implementors (`True`/`False`) | `True`                           |
+| `name`           | Function or method name, or field name                                            | `"Prepare"`, `"Body"`            |
+| `signature`      | **Always `""` for Go** (Go does not use signature-based overload resolution)      | `""`                             |
+| `ext`            | Leave empty (`""`)                                                                | `""`                             |
+| `input`/`output` | Access path                                                                       | `"Argument[0]"`, `"ReturnValue"` |
+| `kind`           | Source/sink/summary kind                                                          | `"sql-injection"`, `"taint"`     |
+| `provenance`     | Origin of the model                                                               | `"manual"`                       |
 
 #### Important: Go-specific rules
+
 - **Signature is always `""`** — Go does not have overloaded functions, so the signature column is unused
 - **Free functions** have `type` = `""` and `subtypes` = `False`
 - **`subtypes: True`** includes embedded types (promoted methods/fields) and interface implementors
@@ -55,17 +56,17 @@ The pack name is `codeql/go-all`.
 
 ### Access Paths
 
-| Component | Description |
-|---|---|
-| `Argument[n]` | Argument at index n (0-based) |
+| Component            | Description                                           |
+| -------------------- | ----------------------------------------------------- |
+| `Argument[n]`        | Argument at index n (0-based)                         |
 | `Argument[receiver]` | The receiver of a method call (`u` in `u.Hostname()`) |
-| `Argument[n1..n2]` | Range of arguments |
-| `Argument[*n]` | First indirection (pointer dereference) of argument n |
-| `ReturnValue` | Return value (or first return value) |
-| `ReturnValue[n]` | The nth return value (0-indexed) |
-| `ArrayElement` | Elements of a slice/array |
-| `MapKey` | Key of a map |
-| `MapValue` | Value of a map |
+| `Argument[n1..n2]`   | Range of arguments                                    |
+| `Argument[*n]`       | First indirection (pointer dereference) of argument n |
+| `ReturnValue`        | Return value (or first return value)                  |
+| `ReturnValue[n]`     | The nth return value (0-indexed)                      |
+| `ArrayElement`       | Elements of a slice/array                             |
+| `MapKey`             | Key of a map                                          |
+| `MapValue`           | Value of a map                                        |
 
 ### Package Versioning
 
@@ -85,14 +86,14 @@ extensions:
       pack: codeql/go
       extensible: packageGrouping
     data:
-      - ["glog", "github.com/golang/glog"]
-      - ["glog", "gopkg.in/glog"]
+      - ['glog', 'github.com/golang/glog']
+      - ['glog', 'gopkg.in/glog']
 
   - addsTo:
       pack: codeql/go
       extensible: sinkModel
     data:
-      - ["group:glog", "", False, "Info", "", "", "Argument[0]", "log-injection", "manual"]
+      - ['group:glog', '', False, 'Info', '', '', 'Argument[0]', 'log-injection', 'manual']
 ```
 
 ### Sink Kinds
@@ -122,7 +123,7 @@ extensions:
       pack: codeql/go-all
       extensible: sinkModel
     data:
-      - ["database/sql", "DB", True, "Prepare", "", "", "Argument[0]", "sql-injection", "manual"]
+      - ['database/sql', 'DB', True, 'Prepare', '', '', 'Argument[0]', 'sql-injection', 'manual']
 
   - addsTo:
       pack: codeql/go-all
@@ -155,7 +156,7 @@ extensions:
       pack: codeql/go-all
       extensible: sourceModel
     data:
-      - ["net/http", "Request", True, "Body", "", "", "", "remote", "manual"]
+      - ['net/http', 'Request', True, 'Body', '', '', '', 'remote', 'manual']
 ```
 
 Note: The output column is `""` (empty) because this models a **field access**, not a method call.
@@ -168,7 +169,7 @@ extensions:
       pack: codeql/go-all
       extensible: sourceModel
     data:
-      - ["net/http", "Request", True, "FormValue", "", "", "ReturnValue", "remote", "manual"]
+      - ['net/http', 'Request', True, 'FormValue', '', '', 'ReturnValue', 'remote', 'manual']
 ```
 
 ### Example: Flow Through `strings.Join`
@@ -179,7 +180,7 @@ extensions:
       pack: codeql/go-all
       extensible: summaryModel
     data:
-      - ["strings", "", False, "Join", "", "", "Argument[0..1]", "ReturnValue", "taint", "manual"]
+      - ['strings', '', False, 'Join', '', '', 'Argument[0..1]', 'ReturnValue', 'taint', 'manual']
 ```
 
 Note: `Argument[0..1]` is shorthand for both `Argument[0]` and `Argument[1]`.
@@ -192,7 +193,18 @@ extensions:
       pack: codeql/go-all
       extensible: summaryModel
     data:
-      - ["net/url", "URL", True, "Hostname", "", "", "Argument[receiver]", "ReturnValue", "taint", "manual"]
+      - [
+          'net/url',
+          'URL',
+          True,
+          'Hostname',
+          '',
+          '',
+          'Argument[receiver]',
+          'ReturnValue',
+          'taint',
+          'manual'
+        ]
 ```
 
 Note: Go uses `Argument[receiver]` (not `Argument[this]`).
@@ -207,7 +219,18 @@ extensions:
       pack: codeql/go-all
       extensible: summaryModel
     data:
-       - ["slices", "", False, "Concat", "", "", "Argument[0].ArrayElement.ArrayElement", "ReturnValue.ArrayElement", "value", "manual"]
+      - [
+          'slices',
+          '',
+          False,
+          'Concat',
+          '',
+          '',
+          'Argument[0].ArrayElement.ArrayElement',
+          'ReturnValue.ArrayElement',
+          'value',
+          'manual'
+        ]
 ```
 
 ### Example: Barrier Using `Htmlquote`
@@ -227,7 +250,7 @@ extensions:
       pack: codeql/go-all
       extensible: barrierModel
     data:
-      - ["group:beego", "", True, "Htmlquote", "", "", "ReturnValue", "html-injection", "manual"]
+      - ['group:beego', '', True, 'Htmlquote', '', '', 'ReturnValue', 'html-injection', 'manual']
 ```
 
 Note: The `group:` prefix matches multiple package paths that refer to the same package (configured via `packageGrouping`). The `kind` `"html-injection"` must match the sink kind used by XSS queries.
@@ -250,10 +273,22 @@ extensions:
       pack: codeql/go-all
       extensible: barrierGuardModel
     data:
-      - ["example.com/example", "", False, "IsSafe", "", "", "Argument[0]", "true", "sql-injection", "manual"]
+      - [
+          'example.com/example',
+          '',
+          False,
+          'IsSafe',
+          '',
+          '',
+          'Argument[0]',
+          'true',
+          'sql-injection',
+          'manual'
+        ]
 ```
 
 Note: The `acceptingValue` `"true"` means the barrier applies when `IsSafe` returns true. The `input` `"Argument[0]"` identifies the first argument whose taint flow is blocked.
 
 ### Additional References
+
 - **[Go Reference](./go_query_development.prompt.md)** - Go query development

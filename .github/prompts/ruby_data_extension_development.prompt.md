@@ -24,18 +24,19 @@ The pack name is `codeql/ruby-all`.
 
 #### Extensible predicates
 
-| Predicate | Columns | Purpose |
-|---|---|---|
-| `sourceModel` | `(type, path, kind)` | Model sources of tainted data |
-| `sinkModel` | `(type, path, kind)` | Model sinks where tainted data is used vulnerably |
-| `summaryModel` | `(type, path, input, output, kind)` | Model flow through method calls |
-| `barrierModel` | `(type, path, kind)` | Model barriers (sanitizers) that stop taint flow |
+| Predicate           | Columns                              | Purpose                                                                  |
+| ------------------- | ------------------------------------ | ------------------------------------------------------------------------ |
+| `sourceModel`       | `(type, path, kind)`                 | Model sources of tainted data                                            |
+| `sinkModel`         | `(type, path, kind)`                 | Model sinks where tainted data is used vulnerably                        |
+| `summaryModel`      | `(type, path, input, output, kind)`  | Model flow through method calls                                          |
+| `barrierModel`      | `(type, path, kind)`                 | Model barriers (sanitizers) that stop taint flow                         |
 | `barrierGuardModel` | `(type, path, acceptingValue, kind)` | Model barrier guards (validators) that stop taint via conditional checks |
-| `typeModel` | `(type1, type2, path)` | Define type relationships |
+| `typeModel`         | `(type1, type2, path)`               | Define type relationships                                                |
 
 #### Type column
 
 The `type` column identifies a starting point for access path evaluation:
+
 - A class name like `"TTY::Command"` matches instances of that class
 - Appending `!` (e.g., `"Sinatra::Base!"`) matches references to the **class itself** rather than instances
 - `typeModel` rows can define aliases so that subtypes inherit all models from a parent type
@@ -44,31 +45,32 @@ The `type` column identifies a starting point for access path evaluation:
 
 Access paths are `.`-separated, evaluated left to right:
 
-| Component | Description |
-|---|---|
-| `Method[name]` | Calls to the named method |
-| `Argument[n]` | Argument at index n |
-| `Argument[name:]` | Keyword argument with the given name |
-| `Argument[self]` | The receiver of a method call |
-| `Argument[block]` | The block argument |
-| `Argument[any]` | Any argument (except self/block) |
-| `Argument[any-named]` | Any keyword argument |
-| `Argument[hash-splat]` | All keyword arguments (`**kwargs`) |
-| `Parameter[n]` | Parameter at index n |
-| `Parameter[name:]` | Keyword parameter with the given name |
-| `Parameter[self]` | The self parameter |
-| `Parameter[block]` | The block parameter |
-| `Parameter[any]` | Any parameter (except self/block) |
-| `Parameter[any-named]` | Any keyword parameter |
-| `Parameter[hash-splat]` | Hash splat parameter |
-| `ReturnValue` | Return value of a call |
-| `Element[any]` | Any element of an array or hash |
-| `Element[n]` | Array element at the given index |
-| `Element[key]` | Hash element at the given key |
-| `Field[@name]` | Instance variable with the given name |
-| `Fuzzy` | All values derived from the current value (approximate) |
+| Component               | Description                                             |
+| ----------------------- | ------------------------------------------------------- |
+| `Method[name]`          | Calls to the named method                               |
+| `Argument[n]`           | Argument at index n                                     |
+| `Argument[name:]`       | Keyword argument with the given name                    |
+| `Argument[self]`        | The receiver of a method call                           |
+| `Argument[block]`       | The block argument                                      |
+| `Argument[any]`         | Any argument (except self/block)                        |
+| `Argument[any-named]`   | Any keyword argument                                    |
+| `Argument[hash-splat]`  | All keyword arguments (`**kwargs`)                      |
+| `Parameter[n]`          | Parameter at index n                                    |
+| `Parameter[name:]`      | Keyword parameter with the given name                   |
+| `Parameter[self]`       | The self parameter                                      |
+| `Parameter[block]`      | The block parameter                                     |
+| `Parameter[any]`        | Any parameter (except self/block)                       |
+| `Parameter[any-named]`  | Any keyword parameter                                   |
+| `Parameter[hash-splat]` | Hash splat parameter                                    |
+| `ReturnValue`           | Return value of a call                                  |
+| `Element[any]`          | Any element of an array or hash                         |
+| `Element[n]`            | Array element at the given index                        |
+| `Element[key]`          | Hash element at the given key                           |
+| `Field[@name]`          | Instance variable with the given name                   |
+| `Fuzzy`                 | All values derived from the current value (approximate) |
 
 **Syntax notes:**
+
 - Multiple operands: `Method[foo,bar]` matches calls to either `foo` or `bar`
 - Numeric ranges: `Argument[1..]` matches all arguments from index 1 onward
 
@@ -98,7 +100,7 @@ extensions:
       pack: codeql/ruby-all
       extensible: sinkModel
     data:
-      - ["TTY::Command", "Method[run].Argument[0]", "command-injection"]
+      - ['TTY::Command', 'Method[run].Argument[0]', 'command-injection']
 
   - addsTo:
       pack: codeql/ruby-all
@@ -131,7 +133,7 @@ extensions:
       pack: codeql/ruby-all
       extensible: summaryModel
     data:
-      - ["URI!", "Method[decode_uri_component]", "Argument[0]", "ReturnValue", "taint"]
+      - ['URI!', 'Method[decode_uri_component]', 'Argument[0]', 'ReturnValue', 'taint']
 ```
 
 Note: `URI!` with the `!` suffix matches the class itself (not instances), since `decode_uri_component` is a class method.
@@ -146,7 +148,7 @@ extensions:
       pack: codeql/ruby-all
       extensible: sourceModel
     data:
-      - ["Sinatra::Base!", "Method[get].Argument[block].Parameter[0]", "remote"]
+      - ['Sinatra::Base!', 'Method[get].Argument[block].Parameter[0]', 'remote']
 ```
 
 ### Example: typeModel for Subclass Inheritance
@@ -159,7 +161,7 @@ extensions:
       pack: codeql/ruby-all
       extensible: typeModel
     data:
-      - ["Mysql2::Client", "Mysql2::EM::Client", ""]
+      - ['Mysql2::Client', 'Mysql2::EM::Client', '']
 ```
 
 ### Example: Barrier Using `Mysql2::Client#escape`
@@ -178,7 +180,7 @@ extensions:
       pack: codeql/ruby-all
       extensible: barrierModel
     data:
-      - ["Mysql2::Client", "Method[escape].ReturnValue", "sql-injection"]
+      - ['Mysql2::Client', 'Method[escape].ReturnValue', 'sql-injection']
 ```
 
 Note: The `type` `"Mysql2::Client"` matches instances of the class. The `kind` `"sql-injection"` must match the sink kind used by SQL injection queries.
@@ -200,10 +202,11 @@ extensions:
       pack: codeql/ruby-all
       extensible: barrierGuardModel
     data:
-      - ["Validator!", "Method[is_safe].Argument[0]", "true", "sql-injection"]
+      - ['Validator!', 'Method[is_safe].Argument[0]', 'true', 'sql-injection']
 ```
 
 Note: The `!` suffix on `"Validator!"` matches the class itself (not instances), since `is_safe` is a class method. The `acceptingValue` `"true"` means the barrier applies when `is_safe` returns true.
 
 ### Additional References
+
 - **[Ruby Reference](./ruby_query_development.prompt.md)** - Ruby query development

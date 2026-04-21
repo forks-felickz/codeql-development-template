@@ -24,34 +24,36 @@ The pack name is `codeql/java-all`.
 
 #### Extensible predicates
 
-| Predicate | Columns | Purpose |
-|---|---|---|
-| `sourceModel` | `(package, type, subtypes, name, signature, ext, output, kind, provenance)` | Model sources of tainted data |
-| `sinkModel` | `(package, type, subtypes, name, signature, ext, input, kind, provenance)` | Model sinks |
-| `summaryModel` | `(package, type, subtypes, name, signature, ext, input, output, kind, provenance)` | Model flow through methods |
-| `barrierModel` | `(package, type, subtypes, name, signature, ext, output, kind, provenance)` | Model barriers (sanitizers) that stop taint flow |
+| Predicate           | Columns                                                                                    | Purpose                                                                  |
+| ------------------- | ------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------ |
+| `sourceModel`       | `(package, type, subtypes, name, signature, ext, output, kind, provenance)`                | Model sources of tainted data                                            |
+| `sinkModel`         | `(package, type, subtypes, name, signature, ext, input, kind, provenance)`                 | Model sinks                                                              |
+| `summaryModel`      | `(package, type, subtypes, name, signature, ext, input, output, kind, provenance)`         | Model flow through methods                                               |
+| `barrierModel`      | `(package, type, subtypes, name, signature, ext, output, kind, provenance)`                | Model barriers (sanitizers) that stop taint flow                         |
 | `barrierGuardModel` | `(package, type, subtypes, name, signature, ext, input, acceptingValue, kind, provenance)` | Model barrier guards (validators) that stop taint via conditional checks |
-| `neutralModel` | `(package, type, name, signature, kind, provenance)` | Mark methods as having no dataflow impact |
+| `neutralModel`      | `(package, type, name, signature, kind, provenance)`                                       | Mark methods as having no dataflow impact                                |
 
 #### Tuple column reference
 
-| Column | Description | Example |
-|---|---|---|
-| `package` | Fully qualified package name | `"java.sql"` |
-| `type` | Class or interface name | `"Statement"` |
-| `subtypes` | Whether model applies to overrides (`True`/`False`) | `True` |
-| `name` | Method name (constructors use the class name) | `"execute"` |
-| `signature` | Method parameter type signature | `"(String)"` |
-| `ext` | Leave empty (`""`) | `""` |
-| `input`/`output` | Access path to the input/output of the flow | `"Argument[0]"`, `"ReturnValue"` |
-| `kind` | Source/sink/summary kind | `"sql-injection"`, `"taint"` |
-| `provenance` | Origin of the model | `"manual"` |
+| Column           | Description                                         | Example                          |
+| ---------------- | --------------------------------------------------- | -------------------------------- |
+| `package`        | Fully qualified package name                        | `"java.sql"`                     |
+| `type`           | Class or interface name                             | `"Statement"`                    |
+| `subtypes`       | Whether model applies to overrides (`True`/`False`) | `True`                           |
+| `name`           | Method name (constructors use the class name)       | `"execute"`                      |
+| `signature`      | Method parameter type signature                     | `"(String)"`                     |
+| `ext`            | Leave empty (`""`)                                  | `""`                             |
+| `input`/`output` | Access path to the input/output of the flow         | `"Argument[0]"`, `"ReturnValue"` |
+| `kind`           | Source/sink/summary kind                            | `"sql-injection"`, `"taint"`     |
+| `provenance`     | Origin of the model                                 | `"manual"`                       |
 
 #### Important: `subtypes` flag
+
 - `True` — the model applies to the method **and all overrides** in subclasses/implementing classes
 - `False` — only applies to the exact class specified
 
 #### Important: `signature` column
+
 - Type names must be **fully qualified**: `"(String)"` means `java.lang.String`
 - Multiple parameters: `"(String,int)"`
 - Generic type parameters must match source: `"Select<TSource,TResult>"`
@@ -59,17 +61,17 @@ The pack name is `codeql/java-all`.
 
 ### Access Paths
 
-| Component | Description |
-|---|---|
-| `Argument[n]` | Argument at index n (0-based) |
-| `Argument[this]` | The qualifier/receiver of a method call |
-| `Argument[n1..n2]` | Range of arguments |
-| `ReturnValue` | Return value of the method |
-| `Element` | Elements of a collection |
-| `Field[name]` | Named field of a class |
-| `Parameter[n]` | Parameter at index n of a callback |
-| `MapKey` | Key of a map |
-| `MapValue` | Value of a map |
+| Component          | Description                             |
+| ------------------ | --------------------------------------- |
+| `Argument[n]`      | Argument at index n (0-based)           |
+| `Argument[this]`   | The qualifier/receiver of a method call |
+| `Argument[n1..n2]` | Range of arguments                      |
+| `ReturnValue`      | Return value of the method              |
+| `Element`          | Elements of a collection                |
+| `Field[name]`      | Named field of a class                  |
+| `Parameter[n]`     | Parameter at index n of a callback      |
+| `MapKey`           | Key of a map                            |
+| `MapValue`         | Value of a map                          |
 
 ### Sink Kinds
 
@@ -78,6 +80,7 @@ The pack name is `codeql/java-all`.
 ### Threat Models (Java-specific)
 
 In addition to `remote` and `local`, Java supports:
+
 - `android` (`android-external-storage-dir`, `contentprovider`) — Android-specific sources
 - `reverse-dns` — reverse DNS lookups
 
@@ -105,7 +108,17 @@ extensions:
       pack: codeql/java-all
       extensible: sinkModel
     data:
-      - ["java.sql", "Statement", True, "execute", "(String)", "", "Argument[0]", "sql-injection", "manual"]
+      - [
+          'java.sql',
+          'Statement',
+          True,
+          'execute',
+          '(String)',
+          '',
+          'Argument[0]',
+          'sql-injection',
+          'manual'
+        ]
 
   - addsTo:
       pack: codeql/java-all
@@ -136,7 +149,7 @@ extensions:
       pack: codeql/java-all
       extensible: sourceModel
     data:
-      - ["java.net", "Socket", False, "getInputStream", "()", "", "ReturnValue", "remote", "manual"]
+      - ['java.net', 'Socket', False, 'getInputStream', '()', '', 'ReturnValue', 'remote', 'manual']
 ```
 
 ### Example: Flow Through `String.concat`
@@ -147,8 +160,30 @@ extensions:
       pack: codeql/java-all
       extensible: summaryModel
     data:
-      - ["java.lang", "String", False, "concat", "(String)", "", "Argument[this]", "ReturnValue", "taint", "manual"]
-      - ["java.lang", "String", False, "concat", "(String)", "", "Argument[0]", "ReturnValue", "taint", "manual"]
+      - [
+          'java.lang',
+          'String',
+          False,
+          'concat',
+          '(String)',
+          '',
+          'Argument[this]',
+          'ReturnValue',
+          'taint',
+          'manual'
+        ]
+      - [
+          'java.lang',
+          'String',
+          False,
+          'concat',
+          '(String)',
+          '',
+          'Argument[0]',
+          'ReturnValue',
+          'taint',
+          'manual'
+        ]
 ```
 
 ### Example: Flow Through Higher-Order Method `Stream.map`
@@ -159,8 +194,30 @@ extensions:
       pack: codeql/java-all
       extensible: summaryModel
     data:
-      - ["java.util.stream", "Stream", True, "map", "(Function)", "", "Argument[this].Element", "Argument[0].Parameter[0]", "value", "manual"]
-      - ["java.util.stream", "Stream", True, "map", "(Function)", "", "Argument[0].ReturnValue", "ReturnValue.Element", "value", "manual"]
+      - [
+          'java.util.stream',
+          'Stream',
+          True,
+          'map',
+          '(Function)',
+          '',
+          'Argument[this].Element',
+          'Argument[0].Parameter[0]',
+          'value',
+          'manual'
+        ]
+      - [
+          'java.util.stream',
+          'Stream',
+          True,
+          'map',
+          '(Function)',
+          '',
+          'Argument[0].ReturnValue',
+          'ReturnValue.Element',
+          'value',
+          'manual'
+        ]
 ```
 
 Note: Two rows are needed — one for flow into the lambda parameter, one for flow from the lambda return to the output stream elements.
@@ -173,7 +230,7 @@ extensions:
       pack: codeql/java-all
       extensible: neutralModel
     data:
-      - ["java.time", "Instant", "now", "()", "summary", "manual"]
+      - ['java.time', 'Instant', 'now', '()', 'summary', 'manual']
 ```
 
 ### Example: Barrier for Path Injection
@@ -192,7 +249,7 @@ extensions:
       pack: codeql/java-all
       extensible: barrierModel
     data:
-      - ["java.io", "File", True, "getName", "()", "", "ReturnValue", "path-injection", "manual"]
+      - ['java.io', 'File', True, 'getName', '()', '', 'ReturnValue', 'path-injection', 'manual']
 ```
 
 Note: The `kind` `"path-injection"` must match the sink kind used by path injection queries. `subtypes: True` ensures the model applies to subclasses of `File`.
@@ -216,10 +273,22 @@ extensions:
       pack: codeql/java-all
       extensible: barrierGuardModel
     data:
-      - ["java.net", "URI", True, "isAbsolute", "()", "", "Argument[this]", "false", "request-forgery", "manual"]
+      - [
+          'java.net',
+          'URI',
+          True,
+          'isAbsolute',
+          '()',
+          '',
+          'Argument[this]',
+          'false',
+          'request-forgery',
+          'manual'
+        ]
 ```
 
 Note: The `acceptingValue` `"false"` means the barrier applies when `isAbsolute` returns false (the URI is relative). The `input` `"Argument[this]"` identifies the qualifier (`uri`) whose taint flow is blocked.
 
 ### Additional References
+
 - **[Java Reference](./java_query_development.prompt.md)** - Java/Kotlin query development

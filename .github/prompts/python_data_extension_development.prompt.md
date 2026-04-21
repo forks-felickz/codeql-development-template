@@ -43,6 +43,7 @@ select call
 The parsing works as follows:
 
 1. `AccessPathSyntax.qll` tokenizes the path "Member[sql].Member[connect].ReturnValue.Member[cursor].ReturnValue.Member[execute].Argument[0]" into individual tokens:
+
 - Member[sql]
 - Member[connect]
 - ReturnValue
@@ -50,9 +51,9 @@ The parsing works as follows:
 - ReturnValue
 - Member[execute]
 - Argument[0]
+
 2. `ApiGraphModels.qll` uses getNodeFromPath() to recursively resolve each token starting from the "databricks" type
 3. `ApiGraphModelsSpecific.qll` handles the Python-specific Member[x] tokens by calling node.getMember(x) on the API graph
-
 
 ### Sample Model
 
@@ -80,7 +81,6 @@ This is a sample model that extends the `sql-injection` sinkModel to find instan
 `databricks.model.yml`
 
 ```yaml
-
 extensions:
   - addsTo:
       pack: codeql/python-all
@@ -92,7 +92,11 @@ extensions:
       extensible: sinkModel
     data:
       # Using API graphs modeling works:
-      - ["databricks","Member[sql].Member[connect].ReturnValue.Member[cursor].ReturnValue.Member[execute].Argument[0]","sql-injection"]
+      - [
+          'databricks',
+          'Member[sql].Member[connect].ReturnValue.Member[cursor].ReturnValue.Member[execute].Argument[0]',
+          'sql-injection'
+        ]
   - addsTo:
       pack: codeql/python-all
       extensible: summaryModel
@@ -117,9 +121,7 @@ extensions:
       pack: codeql/python-all
       extensible: typeModel
     data: []
-
 ```
-
 
 ### Example: Barrier Using `html.escape`
 
@@ -136,7 +138,7 @@ extensions:
       pack: codeql/python-all
       extensible: barrierModel
     data:
-      - ["html", "Member[escape].ReturnValue", "html-injection"]
+      - ['html', 'Member[escape].ReturnValue', 'html-injection']
 ```
 
 Note: The `type` `"html"` starts at the `html` module import. The `path` navigates to the return value of `escape`. The `kind` `"html-injection"` must match the sink kind used by XSS queries.
@@ -156,10 +158,16 @@ extensions:
       pack: codeql/python-all
       extensible: barrierGuardModel
     data:
-      - ["django", "Member[utils].Member[http].Member[url_has_allowed_host_and_scheme].Argument[0,url:]", "true", "url-redirection"]
+      - [
+          'django',
+          'Member[utils].Member[http].Member[url_has_allowed_host_and_scheme].Argument[0,url:]',
+          'true',
+          'url-redirection'
+        ]
 ```
 
 Note: The `acceptingValue` `"true"` means the barrier applies when the function returns true. `Argument[0,url:]` matches either the first positional argument or the keyword argument `url`.
 
 ### Additional References
+
 - **[Python Reference](./python_query_development.prompt.md)** - Python query development

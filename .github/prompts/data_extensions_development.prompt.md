@@ -13,13 +13,15 @@ This prompt provides common guidance for developing CodeQL data extensions acros
 - [Creating a CodeQL model pack](https://docs.github.com/en/code-security/tutorials/customize-code-scanning/creating-and-working-with-codeql-packs?versionId=free-pro-team%40latest&productId=code-security&restPage=how-tos%2Cscan-code-for-vulnerabilities%2Cmanage-your-configuration%2Cediting-your-configuration-of-default-setup#creating-a-codeql-model-pack) - publishing a model pack + for dataExtensions via qlpack.yml
 
 ## Core Principles
+
 CodeQL analysis can be customized by adding library models in data extension YAML files to recognize libraries and frameworks that are not supported by default.
-Model packs can be used to expand code scanning analysis at scale.  Model packs use data extensions, which are implemented as YAML and describe how to add data for new dependencies. When a model pack is specified, the data extensions in that pack will be added to the code scanning analysis automatically.
+Model packs can be used to expand code scanning analysis at scale. Model packs use data extensions, which are implemented as YAML and describe how to add data for new dependencies. When a model pack is specified, the data extensions in that pack will be added to the code scanning analysis automatically.
 
 Generally each language will allow customization of the following extensible prdicates:
-- sourceModel -  This is used to model sources of potentially tainted data. The `kind` of the sources defined using this predicate determine which **threat model** they are associated with (e.g., `remote`, `local`, `file`, `commandargs`). Different threat models can be used to customize the sources used in an analysis.
+
+- sourceModel - This is used to model sources of potentially tainted data. The `kind` of the sources defined using this predicate determine which **threat model** they are associated with (e.g., `remote`, `local`, `file`, `commandargs`). Different threat models can be used to customize the sources used in an analysis.
 - sinkModel - This is used to model sinks where tainted data maybe used in a way that makes the code vulnerable. The `kind` identifies the vulnerability class (e.g., `sql-injection`, `command-injection`).
-- summaryModel -  This is used to model flow through elements. The `kind` is either `taint` (derived value) or `value` (same value).
+- summaryModel - This is used to model flow through elements. The `kind` is either `taint` (derived value) or `value` (same value).
 - neutralModel - This is similar to a summary model but used to model the flow of values that have only a minor impact on the dataflow analysis. Used to override incorrect auto-generated models.
 - barrierModel - This is used to model barriers (sanitizers), which are elements that stop the flow of taint for a specified query kind. For example, an HTML-escaping function that prevents cross-site scripting. The `kind` must match the corresponding sink kind (e.g., `sql-injection`, `html-injection`). Available since CodeQL 2.25.2.
 - barrierGuardModel - This is used to model barrier guards (validators), which are elements that return a boolean indicating whether data is safe. When the conditional check returns the specified `acceptingValue` (e.g., `"true"` or `"false"`), taint flow is stopped through guarded branches. The `kind` must match the corresponding sink kind. Available since CodeQL 2.25.2.
@@ -46,6 +48,7 @@ Given a library's documentation, ask these questions for each public method, fun
 Sources are methods that return data from outside the application boundary. Without source models, taint tracking has no starting point.
 
 Look for methods that:
+
 - Read from HTTP requests (parameters, headers, body, cookies, URL)
 - Read from WebSocket/gRPC/messaging channels
 - Read from files, stdin, environment variables, command-line arguments
@@ -59,6 +62,7 @@ The `kind` column determines the threat model category — see the Threat Models
 Sinks are methods that consume data in a way that can cause a vulnerability if the data is attacker-controlled. Without sink models, CodeQL cannot flag the vulnerability even if tainted data reaches the dangerous call.
 
 Look for methods that:
+
 - Execute SQL or NoSQL queries
 - Execute OS commands or shell scripts
 - Evaluate code dynamically (eval, template rendering)
@@ -70,21 +74,21 @@ Look for methods that:
 
 Each sink kind maps to a specific vulnerability class:
 
-| Sink Kind | Vulnerability | Example |
-|---|---|---|
-| `sql-injection` | SQL Injection (CWE-089) | `cursor.execute(query)` |
-| `command-injection` | OS Command Injection (CWE-078) | `subprocess.run(cmd)` |
-| `code-injection` | Code Injection (CWE-094) | `eval(expr)` |
-| `path-injection` | Path Traversal (CWE-022) | `open(filepath)` |
-| `url-redirection` | Open Redirect (CWE-601) | `redirect(url)` |
-| `log-injection` | Log Injection (CWE-117) | `logger.info(msg)` |
-| `request-forgery` | SSRF (CWE-918) | `fetch(url)` |
-| `nosql-injection` | NoSQL Injection | `collection.find(query)` |
-| `xpath-injection` | XPath Injection | XPath query construction |
-| `ldap-injection` | LDAP Injection | LDAP search filter construction |
-| `html-injection` | XSS (CWE-079) | DOM manipulation (JS only) |
+| Sink Kind                | Vulnerability                      | Example                              |
+| ------------------------ | ---------------------------------- | ------------------------------------ |
+| `sql-injection`          | SQL Injection (CWE-089)            | `cursor.execute(query)`              |
+| `command-injection`      | OS Command Injection (CWE-078)     | `subprocess.run(cmd)`                |
+| `code-injection`         | Code Injection (CWE-094)           | `eval(expr)`                         |
+| `path-injection`         | Path Traversal (CWE-022)           | `open(filepath)`                     |
+| `url-redirection`        | Open Redirect (CWE-601)            | `redirect(url)`                      |
+| `log-injection`          | Log Injection (CWE-117)            | `logger.info(msg)`                   |
+| `request-forgery`        | SSRF (CWE-918)                     | `fetch(url)`                         |
+| `nosql-injection`        | NoSQL Injection                    | `collection.find(query)`             |
+| `xpath-injection`        | XPath Injection                    | XPath query construction             |
+| `ldap-injection`         | LDAP Injection                     | LDAP search filter construction      |
+| `html-injection`         | XSS (CWE-079)                      | DOM manipulation (JS only)           |
 | `unsafe-deserialization` | Insecure Deserialization (CWE-502) | Unsafe YAML/pickle parsing (JS only) |
-| `remote-sink` | Cleartext Transmission (CWE-319) | Network write (C/C++ only) |
+| `remote-sink`            | Cleartext Transmission (CWE-319)   | Network write (C/C++ only)           |
 
 Not all sink kinds are available in all languages — see language-specific prompts for details.
 
@@ -93,6 +97,7 @@ Not all sink kinds are available in all languages — see language-specific prom
 Summaries describe how taint propagates **through** a method call. Without summaries, taint tracking loses track of data as it passes through library/framework code, causing false negatives.
 
 Look for methods that:
+
 - Transform data (encode, decode, escape, unescape, serialize, deserialize)
 - Copy or wrap data (constructors, builders, factory methods)
 - Pass data through collections (add to list, get from map, iterate)
@@ -100,6 +105,7 @@ Look for methods that:
 - Chain or compose operations (middleware, decorators, pipes)
 
 Two summary kinds:
+
 - `taint` — the output is derived from the input but not necessarily identical (e.g., string concatenation, encoding, parsing). Use this for most cases.
 - `value` — the output is the same value or a direct copy (e.g., getter, identity transform, collection element access). Preserves all properties of the original value.
 
@@ -118,6 +124,7 @@ Type models define relationships between types (e.g., "this subclass should inhe
 Barriers model sanitizer functions — methods whose output is considered safe for a specific vulnerability type. A barrier stops taint flow at the modeled element. The `kind` value must match the sink kind used by the query where the barrier should take effect (e.g., `sql-injection`, `html-injection`, `path-injection`, `url-redirection`, `request-forgery`).
 
 Look for methods that:
+
 - Escape or encode output for a specific context (HTML-escape, SQL-escape, shell-escape)
 - Canonicalize or normalize paths to prevent traversal
 - Encode data to prevent injection (URL encoding, base64 for safe contexts)
@@ -128,6 +135,7 @@ Look for methods that:
 Barrier guards model validator functions — methods that return a boolean indicating whether data is safe to use. When the function returns the expected `acceptingValue` (typically `"true"` or `"false"`), taint flow is stopped through the guarded branch. The `kind` must match the corresponding sink kind.
 
 Look for methods that:
+
 - Validate URLs (e.g., check if relative, check against allowlist)
 - Check input format or pattern (e.g., is numeric, matches regex)
 - Verify data integrity or safety (e.g., signature validation, allowlist check)
@@ -178,16 +186,20 @@ Tuples identify targets by a **type** string and an **access path** that navigat
 
 ```yaml
 # sinkModel(type, path, kind) — 3 columns
-- ["databricks","Member[sql].Member[connect].ReturnValue.Member[cursor].ReturnValue.Member[execute].Argument[0]","sql-injection"]
+- [
+    'databricks',
+    'Member[sql].Member[connect].ReturnValue.Member[cursor].ReturnValue.Member[execute].Argument[0]',
+    'sql-injection'
+  ]
 
 # summaryModel(type, path, input, output, kind) — 5 columns
-- ["global", "Member[decodeURIComponent]", "Argument[0]", "ReturnValue", "taint"]
+- ['global', 'Member[decodeURIComponent]', 'Argument[0]', 'ReturnValue', 'taint']
 
 # barrierModel(type, path, kind) — 3 columns
-- ["html", "Member[escape].ReturnValue", "html-injection"]
+- ['html', 'Member[escape].ReturnValue', 'html-injection']
 
 # barrierGuardModel(type, path, acceptingValue, kind) — 4 columns
-- ["my-package", "Member[isValid].Argument[0]", "true", "sql-injection"]
+- ['my-package', 'Member[isValid].Argument[0]', 'true', 'sql-injection']
 ```
 
 - The `type` column is a starting point (package name, class name, or `"global"`)
@@ -202,16 +214,48 @@ Tuples identify targets by **fully qualified package/namespace, type, method nam
 
 ```yaml
 # sinkModel(package, type, subtypes, name, signature, ext, input, kind, provenance) — 9 columns
-- ["java.sql", "Statement", True, "execute", "(String)", "", "Argument[0]", "sql-injection", "manual"]
+- [
+    'java.sql',
+    'Statement',
+    True,
+    'execute',
+    '(String)',
+    '',
+    'Argument[0]',
+    'sql-injection',
+    'manual'
+  ]
 
 # summaryModel(package, type, subtypes, name, signature, ext, input, output, kind, provenance) — 10 columns
-- ["System", "String", False, "Concat", "(System.Object,System.Object)", "", "Argument[0,1]", "ReturnValue", "taint", "manual"]
+- [
+    'System',
+    'String',
+    False,
+    'Concat',
+    '(System.Object,System.Object)',
+    '',
+    'Argument[0,1]',
+    'ReturnValue',
+    'taint',
+    'manual'
+  ]
 
 # barrierModel(package, type, subtypes, name, signature, ext, output, kind, provenance) — 9 columns
-- ["java.io", "File", True, "getName", "()", "", "ReturnValue", "path-injection", "manual"]
+- ['java.io', 'File', True, 'getName', '()', '', 'ReturnValue', 'path-injection', 'manual']
 
 # barrierGuardModel(package, type, subtypes, name, signature, ext, input, acceptingValue, kind, provenance) — 10 columns
-- ["java.net", "URI", True, "isAbsolute", "()", "", "Argument[this]", "false", "request-forgery", "manual"]
+- [
+    'java.net',
+    'URI',
+    True,
+    'isAbsolute',
+    '()',
+    '',
+    'Argument[this]',
+    'false',
+    'request-forgery',
+    'manual'
+  ]
 ```
 
 - The first 5 columns locate the callable: `package`/`namespace`, `type`, `subtypes` (bool), `name`, `signature`
@@ -221,17 +265,17 @@ Tuples identify targets by **fully qualified package/namespace, type, method nam
 
 #### Quick reference
 
-| | API Graph | MaD |
-|---|---|---|
-| **Languages** | Python, Ruby, JS/TS | Java/Kotlin, C#, Go, C/C++ |
-| **Pack name** | `codeql/<lang>-all` | `codeql/<lang>-all` |
-| **Sink columns** | 3 (type, path, kind) | 9 |
-| **Summary columns** | 5 | 10 |
-| **Barrier columns** | 3 (type, path, kind) | 9 |
-| **Barrier guard columns** | 4 (type, path, acceptingValue, kind) | 10 |
-| **Target identification** | Access path navigation | Package + type + method + signature |
-| **Pointer indirection** | N/A | C/C++ only: `Argument[*n]` |
-| **Receiver access** | `Argument[self]` (Ruby/Python) | `Argument[this]` (Java/C#), `Argument[receiver]` (Go) |
+|                           | API Graph                            | MaD                                                   |
+| ------------------------- | ------------------------------------ | ----------------------------------------------------- |
+| **Languages**             | Python, Ruby, JS/TS                  | Java/Kotlin, C#, Go, C/C++                            |
+| **Pack name**             | `codeql/<lang>-all`                  | `codeql/<lang>-all`                                   |
+| **Sink columns**          | 3 (type, path, kind)                 | 9                                                     |
+| **Summary columns**       | 5                                    | 10                                                    |
+| **Barrier columns**       | 3 (type, path, kind)                 | 9                                                     |
+| **Barrier guard columns** | 4 (type, path, acceptingValue, kind) | 10                                                    |
+| **Target identification** | Access path navigation               | Package + type + method + signature                   |
+| **Pointer indirection**   | N/A                                  | C/C++ only: `Argument[*n]`                            |
+| **Receiver access**       | `Argument[self]` (Ruby/Python)       | `Argument[this]` (Java/C#), `Argument[receiver]` (Go) |
 
 For detailed syntax and examples, see the language-specific data extension prompts.
 
@@ -240,37 +284,39 @@ For detailed syntax and examples, see the language-specific data extension promp
 Threat models control which `sourceModel` entries are active during analysis. The `kind` column of a `sourceModel` determines its threat model category.
 
 #### Default behavior
+
 By default, only the **`remote`** threat model is enabled. This means only sources marked with `kind: "remote"` are active. To include local sources, you must explicitly enable additional threat models via `--threat-model` on the CLI or in the code scanning configuration.
 
 #### Categories
 
 **`remote`** (enabled by default)
+
 - Network requests and responses — HTTP parameters, headers, request bodies, WebSocket messages, API responses
 - This is the primary threat model for web-facing applications
 
 **`local`** (must be explicitly enabled)
 Represents data from the local system. Subcategories can be enabled/disabled independently:
 
-| Subcategory | Description | Example |
-|---|---|---|
-| `file` | Local file reads | `open("config.txt").read()` |
-| `commandargs` | Command-line arguments | `sys.argv[1]` |
-| `database` | Database query results | `cursor.fetchall()` |
-| `environment` | Environment variables | `os.environ["KEY"]` |
-| `stdin` | Standard input | `input()` |
-| `windows-registry` | Windows registry values (C# only) | Registry.GetValue() |
+| Subcategory        | Description                       | Example                     |
+| ------------------ | --------------------------------- | --------------------------- |
+| `file`             | Local file reads                  | `open("config.txt").read()` |
+| `commandargs`      | Command-line arguments            | `sys.argv[1]`               |
+| `database`         | Database query results            | `cursor.fetchall()`         |
+| `environment`      | Environment variables             | `os.environ["KEY"]`         |
+| `stdin`            | Standard input                    | `input()`                   |
+| `windows-registry` | Windows registry values (C# only) | Registry.GetValue()         |
 
 Enable selectively: `--threat-model commandargs --threat-model environment` enables only those two, not all of `local`.
 
 **Language-specific categories:**
 
-| Category | Description | Language |
-|---|---|---|
-| `android` | External storage reads, ContentProvider params | Java/Kotlin only |
-| `reverse-dns` | Reverse DNS lookups | Java only |
-| `database-access-result` | Database access results | JavaScript only |
-| `file-write` | Opening files in write mode | C# only |
-| `view-component-input` | React/Vue/Angular component props | JavaScript/TypeScript only |
+| Category                 | Description                                    | Language                   |
+| ------------------------ | ---------------------------------------------- | -------------------------- |
+| `android`                | External storage reads, ContentProvider params | Java/Kotlin only           |
+| `reverse-dns`            | Reverse DNS lookups                            | Java only                  |
+| `database-access-result` | Database access results                        | JavaScript only            |
+| `file-write`             | Opening files in write mode                    | C# only                    |
+| `view-component-input`   | React/Vue/Angular component props              | JavaScript/TypeScript only |
 
 #### Choosing a threat model for your source
 
@@ -287,7 +333,6 @@ Your generated CodeQL models will be evaluated on:
    - **Important**: Minimize warning-level diagnostics (deprecated elements, style guide deviations)
    - **Best Practice**: Follow CodeQL naming conventions and idioms, provide comments with sensible organizaiton
 
-
 ### Common Pitfalls
 
 1. **Invalid definitions**: yaml models that do not match the defined format and have not been tested to be valid are not well trusted.
@@ -297,15 +342,15 @@ Your generated CodeQL models will be evaluated on:
 Access paths for data extensions are parsed using [shared/dataflow/codeql/dataflow/internal/AccessPathSyntax.qll](https://github.com/github/codeql/blob/main/shared/dataflow/codeql/dataflow/internal/AccessPathSyntax.qll)
 
 For languages that support API Graphs as the access paths can be most easilly tested by:
+
 1. creating a small codeql database with some sample code that has a full end to end flow for the suspected query
 2. writing/executing a sample codeql query using api graphs to verify with 100% certainty that the path to discover the suspected source/sink/summary is verified.
 
 To understand if APIGraphs are used by the language, it is best to evaluate the ModelsAsData.qll for the given language.
+
 - ex: [python/ql/lib/semmle/python/frameworks/data/ModelsAsData.qll](https://github.com/github/codeql/blob/main/python/ql/lib/semmle/python/frameworks/data/ModelsAsData.qll) for python imports ApiGraphModels and ApiGraphs
   - [python/ql/lib/semmle/python/frameworks/data/internal/ApiGraphModels.qll](https://github.com/github/codeql/blob/main/python/ql/lib/semmle/python/frameworks/data/internal/ApiGraphModels.qll) dealing with flow models specified in extensible predicates.
     - [python/ql/lib/semmle/python/frameworks/data/internal/ApiGraphModelsSpecific.qll](https://github.com/github/codeql/blob/main/python/ql/lib/semmle/python/frameworks/data/internal/ApiGraphModelsSpecific.qll) handles the Python-specific Member[x] tokens by calling node.getMember(x) on the API graph
-
-
 
 ## CLI References
 
@@ -378,13 +423,13 @@ codeql test run \
 
 #### Full option reference
 
-| Option | Available on | Purpose |
-|---|---|---|
-| `--model-packs=<name@range>` | `codeql query run`, `codeql database analyze` | Reference published model packs by name |
+| Option                                | Available on                                                     | Purpose                                                                      |
+| ------------------------------------- | ---------------------------------------------------------------- | ---------------------------------------------------------------------------- |
+| `--model-packs=<name@range>`          | `codeql query run`, `codeql database analyze`                    | Reference published model packs by name                                      |
 | `--additional-packs=<dir>[;<dir>...]` | `codeql query run`, `codeql test run`, `codeql database analyze` | Search local directories for packs (primary mechanism for local development) |
-| `--no-database-extension-packs` | `codeql database analyze` | Omit extensions bundled into the database at creation time |
-| `--no-database-threat-models` | `codeql database analyze` | Omit threat model config stored in the database |
-| `--threat-model=<name>` | `codeql database analyze` | Enable/disable threat model categories (e.g., `local`, `remote`, `all`) |
+| `--no-database-extension-packs`       | `codeql database analyze`                                        | Omit extensions bundled into the database at creation time                   |
+| `--no-database-threat-models`         | `codeql database analyze`                                        | Omit threat model config stored in the database                              |
+| `--threat-model=<name>`               | `codeql database analyze`                                        | Enable/disable threat model categories (e.g., `local`, `remote`, `all`)      |
 
 ## Related Resources
 
