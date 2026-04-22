@@ -1,5 +1,5 @@
-name: Request new CodeQL Data Exension
-description: Request a new CodeQL query for detecting specific code patterns
+name: Request new CodeQL Data Extension
+description: Request a new CodeQL data extension (models-as-data) for an unmodeled library or framework
 title: "[Data Extension Create]: "
 labels: ["data-extension-create", "enhancement"]
 body:
@@ -12,9 +12,8 @@ body:
     id: target-language
     attributes:
       label: Target Language
-      description: Which programming language should this query target?
+      description: Which programming language should this data extension target?
       options:
-        - actions
         - cpp
         - csharp
         - go

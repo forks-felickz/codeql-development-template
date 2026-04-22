@@ -5,7 +5,7 @@ mode: agent
 # C# Data Extension
 
 For general CodeQL data extension model development guidance, see [Common Data Extension Development](./data_extensions_development.prompt.md).
-For general CodeQL query development guidance, see [Common Query Development](./query_development.prompt.md).
+If you need to write a custom CodeQL query instead of a data extension, see [Common Query Development](./query_development.prompt.md).
 
 ## C#-Specific Documentation
 

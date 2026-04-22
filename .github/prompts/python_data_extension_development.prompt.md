@@ -5,7 +5,7 @@ mode: agent
 # Python Data Extension
 
 For general CodeQL data extension model development guidance, see [Common Data Extension Development](./data_extensions_development.prompt.md).
-For general CodeQL query development guidance, see [Common Query Development](./query_development.prompt.md).
+If you need to write a custom CodeQL query instead of a data extension, see [Common Query Development](./query_development.prompt.md).
 
 ## Python-Specific Documentation
 
@@ -14,7 +14,7 @@ For general CodeQL query development guidance, see [Common Query Development](./
 - [Customizing Library Models for Python](https://codeql.github.com/docs/codeql-language-guides/customizing-library-models-for-python/)
   - Can also be found at [Customizing Library Models for Python Docs](https://github.com/github/codeql/blob/main/docs/codeql/codeql-language-guides/customizing-library-models-for-python.rst)
 
-- [Using API graphs in Python](https://codeql.github.com/docs/codeql-language-guides/using-api-graphs-in-python/) - the acess paths input to the extension tuple are powered by API graphs
+- [Using API graphs in Python](https://codeql.github.com/docs/codeql-language-guides/using-api-graphs-in-python/) - the access paths input to the extension tuple are powered by API graphs
 
 ### API Graphs
 

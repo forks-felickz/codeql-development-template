@@ -8,7 +8,7 @@ This prompt provides common guidance for developing CodeQL data extensions acros
 
 ## Product Documentation
 
-- [Extending coverage for a repository](https://docs.github.com/en/code-security/how-tos/scan-code-for-vulnerabilities/manage-your-configuration/editing-your-configuration-of-default-setup#extending-coverage-for-a-repository) - `.github/codeql/extensions directory` for local model pack refrences (does not need a qlpack.yml)
+- [Extending coverage for a repository](https://docs.github.com/en/code-security/how-tos/scan-code-for-vulnerabilities/manage-your-configuration/editing-your-configuration-of-default-setup#extending-coverage-for-a-repository) - `.github/codeql/extensions directory` for local model pack references (does not need a qlpack.yml)
 - [Extending coverage for all repositories in an organization](https://docs.github.com/en/code-security/how-tos/scan-code-for-vulnerabilities/manage-your-configuration/editing-your-configuration-of-default-setup#extending-coverage-for-all-repositories-in-an-organization) - publishing model packs and referencing them globally (must be done click button in UI)
 - [Creating a CodeQL model pack](https://docs.github.com/en/code-security/tutorials/customize-code-scanning/creating-and-working-with-codeql-packs?versionId=free-pro-team%40latest&productId=code-security&restPage=how-tos%2Cscan-code-for-vulnerabilities%2Cmanage-your-configuration%2Cediting-your-configuration-of-default-setup#creating-a-codeql-model-pack) - publishing a model pack + for dataExtensions via qlpack.yml
 
@@ -17,7 +17,7 @@ This prompt provides common guidance for developing CodeQL data extensions acros
 CodeQL analysis can be customized by adding library models in data extension YAML files to recognize libraries and frameworks that are not supported by default.
 Model packs can be used to expand code scanning analysis at scale. Model packs use data extensions, which are implemented as YAML and describe how to add data for new dependencies. When a model pack is specified, the data extensions in that pack will be added to the code scanning analysis automatically.
 
-Generally each language will allow customization of the following extensible prdicates:
+Generally each language will allow customization of the following extensible predicates:
 
 - sourceModel - This is used to model sources of potentially tainted data. The `kind` of the sources defined using this predicate determine which **threat model** they are associated with (e.g., `remote`, `local`, `file`, `commandargs`). Different threat models can be used to customize the sources used in an analysis.
 - sinkModel - This is used to model sinks where tainted data maybe used in a way that makes the code vulnerable. The `kind` identifies the vulnerability class (e.g., `sql-injection`, `command-injection`).
@@ -174,6 +174,58 @@ Naming convention: `<library>-<module>.model.yml` (lowercase, hyphen-separated).
 
 All `.model.yml` files within a model pack are automatically picked up via the `dataExtensions` glob in `qlpack.yml` (e.g., `dataExtensions: models/**/*.yml`).
 
+### Common Workflows
+
+Data extensions support three primary workflows. An agent should follow the appropriate procedure end-to-end rather than jumping straight to YAML authoring.
+
+#### Workflow 1: Creating a new `.model.yml`
+
+1. **Identify the library to model** — review the library's API documentation or source code and classify public methods as sources, sinks, summaries, barriers, or barrier guards (see "What to Model in a Library" above)
+2. **Determine the correct format** — check whether the target language uses API Graph (Python, Ruby, JS/TS) or MaD (Java/Kotlin, C#, Go, C/C++) tuples (see "Two Model Formats" below)
+3. **Create the YAML file** — use the naming convention `<library>-<module>.model.yml` and the appropriate column format for the language
+4. **Place the file** — choose one of two paths depending on scope:
+   - **Single repository:** Place the `.model.yml` directly in `.github/codeql/extensions/<pack-name>/` — no `qlpack.yml` is needed; Code Scanning picks up extensions from this directory automatically
+   - **Model pack (reusable across repos):** Place the file under a pack directory (e.g., `languages/<language>/custom/src/`) with a `qlpack.yml` that declares `extensionTargets` and `dataExtensions`
+5. **Test locally** — run a targeted query against a sample database to confirm new findings appear (see "Model Pack / Data Extension Options" below for `--additional-packs` usage):
+   ```bash
+   codeql query run \
+       --database=/path/to/db \
+       --additional-packs=<path-to-pack-dir> \
+       --output=results.bqrs \
+       -- path/to/RelevantQuery.ql
+   ```
+6. **Validate results** — decode and inspect results with `codeql bqrs decode`; confirm expected findings appear and no false positives are introduced
+
+#### Workflow 2: Updating an existing `.model.yml`
+
+1. **Find the existing model file** — check these locations in order:
+   - `.github/codeql/extensions/` in the current repository
+   - `languages/<lang>/custom/src/` in this template repository
+   - Published model packs (search GHCR or your org's CodeQL pack registry)
+   - **Note:** Models in upstream `codeql/<lang>-all` packs cannot be edited directly — create a custom model pack that adds new rows alongside the built-in models
+2. **Add new rows** to the appropriate extensible predicate section (`sinkModel`, `sourceModel`, `summaryModel`, etc.) — do not remove existing rows unless they are incorrect
+3. **Maintain consistency** — match the existing formatting, column count, and provenance values in the file
+4. **Re-test** — run the same query or test suite that covers the library to confirm:
+   - Existing findings are unchanged (no regressions)
+   - New coverage produces expected results
+5. **Bump the version** — if the model file lives in a published model pack, increment the `version` field in `qlpack.yml` before publishing
+
+#### Workflow 3: Publishing a model pack to GHCR
+
+1. **Ensure `qlpack.yml` is configured correctly:**
+   ```yaml
+   name: <org>/<language>-<pack-name>
+   version: 1.0.0
+   library: true
+   extensionTargets:
+     codeql/<language>-all: '*'
+   dataExtensions:
+     - models/**/*.yml
+   ```
+2. **Run `codeql pack publish`** to push the pack to the GitHub Container Registry
+3. **Configure for org-wide Default Setup** — in the GitHub organization settings, navigate to Code security → Default setup → Model packs and add `<org>/<language>-<pack-name>` (see [Extending coverage for all repositories in an organization](https://docs.github.com/en/code-security/how-tos/find-and-fix-code-vulnerabilities/manage-your-configuration/editing-your-configuration-of-default-setup#extending-codeql-coverage-with-codeql-model-packs-in-default-setup))
+4. **For updates to an already-published pack** — increment the `version` in `qlpack.yml`, then re-run `codeql pack publish`; Default Setup will pick up the new version automatically based on the version range configured
+
 ### Two Model Formats: API Graph vs MaD
 
 CodeQL data extensions use one of two tuple formats depending on the language. Using the wrong format for a language will produce invalid extensions.
@@ -324,14 +376,14 @@ Enable selectively: `--threat-model commandargs --threat-model environment` enab
 - Use specific `local` subcategories (e.g., `"file"`, `"commandargs"`) when modeling local input mechanisms — be precise rather than using the generic `"local"` parent
 - When in doubt, use `"remote"` — it provides the broadest default coverage
 
-### Query Quality Criteria
+### Model Quality Criteria
 
 Your generated CodeQL models will be evaluated on:
 
 1. **Code Quality**:
    - **Critical**: Extensions must be formatted without errors. Invalid extensions will fail the engine and have negative code quality.
    - **Important**: Minimize warning-level diagnostics (deprecated elements, style guide deviations)
-   - **Best Practice**: Follow CodeQL naming conventions and idioms, provide comments with sensible organizaiton
+   - **Best Practice**: Follow CodeQL naming conventions and idioms, provide comments with sensible organization
 
 ### Common Pitfalls
 
@@ -341,7 +393,7 @@ Your generated CodeQL models will be evaluated on:
 
 Access paths for data extensions are parsed using [shared/dataflow/codeql/dataflow/internal/AccessPathSyntax.qll](https://github.com/github/codeql/blob/main/shared/dataflow/codeql/dataflow/internal/AccessPathSyntax.qll)
 
-For languages that support API Graphs as the access paths can be most easilly tested by:
+For languages that support API Graphs as the access paths can be most easily tested by:
 
 1. creating a small codeql database with some sample code that has a full end to end flow for the suspected query
 2. writing/executing a sample codeql query using api graphs to verify with 100% certainty that the path to discover the suspected source/sink/summary is verified.
